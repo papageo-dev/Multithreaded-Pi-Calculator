@@ -4,12 +4,13 @@
 #include <math.h>
 #include <pthread.h>
 
-#define ThreadsNum 4 //MEGISTOS ARITHMOS NHMATWN POU 8A KATASKEBASTOUN
+#define ThreadsNum 4 //Max number of threads
 
-struct thread_data{ //DOMH GIA TA NHMATA
-    int id; //ARITHMOS NHMATOS
-    double *sumPi; //MOIRAZOMENOS METRHTHS GIA THN APOTHIKEUSH TOU Pi
-    pthread_mutex_t *lock; //METABLHTH KLEIDWMATOS
+//Threads structure
+struct thread_data{
+    int id; //thread id
+    double *sumPi; //Shared counter, to save summary of Pi
+    pthread_mutex_t *lock; //Lock variable
 };
 
 
@@ -19,70 +20,72 @@ double f( double a )
     return (4.0 / (1.0 + a*a));
 }
 
+/*Calculate Pi*/
 void *Calculator(void *pArg){
 
     int i, my_id;
     double pi, h, my_sum, x;
-    struct thread_data *my_data; //METABLHTH/DEIKTHS THS DOMHS TWN NHMATWN(thread_data)
+    struct thread_data *my_data; //Pointer to threads structure (thread_data)
 
     my_data = (struct thread_data *)pArg;
     my_id = my_data->id;
 
-    my_id=*((int *)pArg); //ARXIKOPOIHSH TOU ARITHMOU TOU NHMATOS
-    h=1.0/(double) my_id; //ARXIKOPOIHSH THS EMBELIAS TWN TIMWN GIA TOUS YPOLOGISMOUS
-    my_sum=0.0; //ARXIKOPOIHSH TOU SUNOLOU TWN PRAKSEWN KATHE NHMATOS, GIA TON YPOLOGISMO TOU Pi
+    my_id=*((int *)pArg); //Initialize thread id
+    h=1.0/(double) my_id; //Initialize the range of values, for the calculations
+    my_sum=0.0; //Initialize the summary of each thread's calculation
 
     for (i=0; i<=my_id; i++){
-    	x = h * ((double)i + 0.5); //EN MERH YPOLOGISMOS TOU Pi
-        my_sum += f(x); //YPOLOGISMOS TOU SYNOLOU GIA KATHE THREAD
+    	x = h * ((double)i + 0.5); //Partial calculation of Pi
+        my_sum += f(x); //Calculate each thread's result and add it to thread's summary
     }
-    pi = h * my_sum;
+    pi = h * my_sum; //Multiply each thread's summary with h and add it to Pi's summary of thread
 
-    /*KLEIDWMA TOU KRISIMOU SHMEIOU, OTAN TO KATHE THREAD AYKSANEI TON KOINO METRHTH TOU Pi(my_data->SumPi)*/
-    pthread_mutex_lock(my_data->lock); //KLEIDWMA my_data->SumPi
-    *(my_data->sumPi)+=pi; //PROSTHESH TOU YPOLOGISMOU KATHE NHMATOS STON MOIRAZOMENO METRHTH TOU Pi(my_data->SumPi)
-    pthread_mutex_unlock(my_data->lock); //KSEKLEIDWMA my_data->SumPi
+    /*Lock the critical section, when a thread increase the shared counter of Pi's summary(my_data->SumPi)*/
+    pthread_mutex_lock(my_data->lock); //Lock: my_data->SumPi
+    *(my_data->sumPi)+=pi; //Add each thread's result(pi) to the shared counter of Pi's summary(my_data->SumPi)
+    pthread_mutex_unlock(my_data->lock); //Unlock: my_data->SumPi
 
 return 0;
 }
 
 
+/*Main Program*/
 int main(int argc, char *argv[])
 {
     int i;
-    double PI25DT = 3.141592653589793238462643; //ARXIKOPOIHSH TOU PI25DT=3.14...
+    double PI25DT = 3.141592653589793238462643; //Initialize PI25DT=3.14...
 
-    double shared_counter; //PROSWRINOS KOINPS METRHTHS
-    pthread_mutex_t shared_mutex; //PROSWRINH METABLHTH KLEIDWMATOS
-    pthread_t *threads; //NHMATA
+    double shared_counter; //Temporary shared counter
+    pthread_mutex_t shared_mutex; //Temporary lock variable
+    pthread_t *threads; //Pointer to threads
 
-    struct thread_data *pArg; //METABLHTH TUPOU thread_data GIA TA NHMATA
+    struct thread_data *pArg; //Pointer to thread_data structure
 
-    threads = (pthread_t *)malloc(sizeof(pthread_t)*ThreadsNum);
-    pArg = (struct thread_data *)malloc(sizeof(struct thread_data)*ThreadsNum);
+    threads = (pthread_t *)malloc(sizeof(pthread_t)*ThreadsNum); //Initialize threads
+    pArg = (struct thread_data *)malloc(sizeof(struct thread_data)*ThreadsNum); //Initialize pArg
 
-    shared_counter=0.0; //ARXIKOPOIHSH KOINOU METRHTH
+    shared_counter=0.0; //Initialize share counter, at 0.0
 
-    pthread_mutex_init(&shared_mutex, NULL); //DHMIOURGIA KLEIDWMATOS
+    pthread_mutex_init(&shared_mutex, NULL); //Initialize the Lock variable
 
     for (i=0; i<ThreadsNum; i++){
-        pArg[i].id=i; //APOTHIKEUSH ARITHMOU NHMATOS STHN DOMH thread_data
-       	pArg[i].sumPi = &shared_counter; //APOTHIKEUSH APOTELESMATOS(KOINOS METRHTHS) STHN DOMH thread_data
-     	pArg[i].lock = &shared_mutex; //APOTHIKEUSH THS METABLHTHS KLEIDWMATOS THN DOMH thread_data
+        pArg[i].id=i; //Store current thread's id to thread_data structure
+       	pArg[i].sumPi = &shared_counter; //Store the result(shared counter) to thread_data structure
+     	pArg[i].lock = &shared_mutex; //Store the Lock variable to thread_data structure
     }
 
     for (i=0; i<ThreadsNum; i++){
-        pthread_create(&threads[i], NULL, Calculator, (void*)&pArg[i]); //DHMIOURGIA TOU NHMATOS KAI KLHSH THS calculator()
+        pthread_create(&threads[i], NULL, Calculator, (void*)&pArg[i]); //Create a thread and call calculator()
     }
 
     for (i=0; i<ThreadsNum; i++){
-        pthread_join(threads[i], NULL); //ANAMONH GIA TON TERMATISMO KATHE THREAD POU YPOLOGIZEI
+        pthread_join(threads[i], NULL); //Waiting for each thread to finish its calculation
     }
 
-    /*EKTYPWSH THS TIMHS TOU Pi KAI TOU SFALAMATOS STON YPOLOGISMO THS TIMHS TOU*/
+    /*Print Pi value and its error value in calculation*/
     printf("Pi is approximately %.16f. Error is %.16f\n", *(pArg->sumPi), fabs(*(pArg->sumPi) - PI25DT));
 
-    pthread_mutex_destroy(&shared_mutex); //KATASTROFH KLEIDWMATOS
+    pthread_mutex_destroy(&shared_mutex); //Destroy the Lock variable
 
 return 0;
 }
