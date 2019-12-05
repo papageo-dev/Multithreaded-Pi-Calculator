@@ -10,7 +10,7 @@
 # General Description
 
  These are some algorithms, which calculate the value of Pi, in various multithreaded ways.                               
- They divide the calculation into threads and the final result is the sum of the partial calculation of all the threads.
+ They divide the calculation into threads and the final result is the sum of the partial calculation of each thread.
 
 # Analysis
 
