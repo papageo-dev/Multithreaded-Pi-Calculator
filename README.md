@@ -22,9 +22,10 @@
  I want to create and initialize the thread structure variables (thread_data).                        
  In the same way (iterative loop) and using pthread_create() I call the Calculator() function.                         
  Calculator() calculates a part of Pi from each thread and stores it in the local variable my_sum.                        
- Next, I lock the shared variable my_data->sumPi of the thread_data structure, where the computations(my_sum) of all threads are added.
- Finally, in main() I call pthread_join() to wait for the thread to terminate each thread that counts and appears               
- the end result(* (pArg-> sumPi)) and its exclusion(* (pArg-> sumPi) - PI25DT).                                           
+ Next, I lock the shared variable my_data->sumPi of the thread_data structure, where the computations(my_sum)
+ of all threads are added.                                                                                               
+ Finally, in main() I call pthread_join() to wait for the thread to terminate each thread that counts                        
+ and appears the end result(* (pArg-> sumPi)) and its exclusion(* (pArg-> sumPi) - PI25DT).                                             
 
  • piCalc2.c:                                                                                                            
  This solution works in the same way as piCalc1.c.                                                                       
